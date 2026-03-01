@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo test:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.rs)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebSearch",
+      "WebFetch(domain:crates.io)",
+      "WebFetch(domain:truckkernel.com)",
+      "WebFetch(domain:ricos.gitlab.io)",
+      "Bash(/tmp/occ_head.md:*)",
+      "Bash(/tmp/occ_new.md:*)"
+    ]
+  }
+}
