@@ -58,9 +58,12 @@ fn stretch_axis(shape: Shape, axis: usize, cut_coord: f64, delta: f64) -> Shape 
 		_ => dvec3(0.0, 0.0, delta),
 	};
 
-	let half_pos = Shape::half_space(plane_origin, plane_normal);
-	let mut part_pos = shape.intersect(&half_pos).shape.deep_copy();
-	let part_neg = shape.subtract(&half_pos).shape.deep_copy();
+	// half_space の法線はソリッドの外側を向く慣例。
+	// plane_normal が +X を向く場合、ソリッドは x < cut_coord（負側）。
+	// subtract した側が cut_coord より大きい正側になる。
+	let half = Shape::half_space(plane_origin, plane_normal);
+	let part_neg = shape.intersect(&half).shape.deep_copy();
+	let mut part_pos = shape.subtract(&half).shape.deep_copy();
 	part_pos.set_global_translation(translation);
 
 	// 切断面を押し出してフィラーを生成
