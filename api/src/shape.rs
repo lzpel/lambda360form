@@ -1,8 +1,9 @@
 use crate::openapi::*;
-use crate::shape_stretch::shape_stretch;
+use crate::shape_stretch::stretch;
 use crate::shape_to_glb::create_glb;
+use chijin::Shape;
 use ngoni;
-use opencascade::primitives::Shape;
+
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 
@@ -54,19 +55,15 @@ pub async fn collect_shape(
 	});
 	let pairs = futures_util::future::try_join_all(futures).await?;
 
-	// Phase 3: spawn_blockingで並列BREP読み込み（TopoDS_Shape: Send）
+	// Phase 3: spawn_blocking で並列 BRep 読み込み（chijin 0.1.1 で Shape: Send）
 	let handles: Vec<_> = pairs
 		.into_iter()
 		.map(|(sha256, data)| {
 			tokio::task::spawn_blocking(move || {
-				let tmp = std::env::temp_dir().join(format!("{}.brep", sha256));
-				std::fs::write(&tmp, &data)
-					.map_err(|e| format!("Failed to write temp brep: {}", e))?;
-				let shape = Shape::read_brep_text(&tmp)
-					.or_else(|_| Shape::read_brep_bin(&tmp))
-					.map_err(|e| format!("Failed to read brep '{}': {:?}", sha256, e));
-				let _ = std::fs::remove_file(&tmp);
-				Ok::<_, String>((sha256, shape?))
+				let shape = Shape::read_brep_text(&mut std::io::Cursor::new(&data))
+					.or_else(|_| Shape::read_brep_bin(&mut std::io::Cursor::new(&data)))
+					.map_err(|e| format!("Failed to read brep '{}': {:?}", sha256, e))?;
+				Ok::<_, String>((sha256, shape))
 			})
 		})
 		.collect();
@@ -217,7 +214,7 @@ fn eval_shape(node: &ShapeNode, shapes: &mut HashMap<String, Shape>) -> Result<S
 			let [cx, cy, cz] = resolve_vec3(&n.cut)?;
 			let [dx, dy, dz] = resolve_vec3(&n.delta)?;
 			let child = eval_shape(&n.shape, shapes)?;
-			shape_stretch(child, cx, cy, cz, dx, dy, dz)
+			stretch(&child, cx, cy, cz, dx, dy, dz).map_err(|e| e.to_string())
 		}
 		_ => Err("Only StepNode and StretchNode are currently supported".to_string()),
 	}
