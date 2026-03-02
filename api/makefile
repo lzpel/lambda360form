@@ -16,8 +16,12 @@ clean:
 	rm -rf target Cargo.lock
 	cargo clean
 
-path:
-	echo "$${PATH}"
+push:
+	docker build -t lzpel/chijin-builder -f DockerfileAsBuilder .
+	docker push lzpel/chijin-builder
+
+image:
+	docker build -t lambda360order .
 
 test-online:
 	cargo test -p api -- test_online_step_pipeline --include-ignored --nocapture
