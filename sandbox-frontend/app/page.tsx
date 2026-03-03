@@ -19,7 +19,7 @@ export default function HomePage() {
           <Link href="/brep">BREP Viewer (Binary)</Link>
         </li>
         <li>
-          <Link href="/order0">Order Page (Mockup)</Link>
+          <Link href="/form_box">Form Box (lambda360form npm パッケージ使用)</Link>
         </li>
         <li>
           <Link href="/insert">Embed/Insert Demo</Link>
