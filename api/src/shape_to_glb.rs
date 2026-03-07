@@ -361,13 +361,12 @@ mod tests {
 	}
 
 	#[test]
-	fn shape_unsupported_node_returns_err() {
+	fn shape_union_missing_data_returns_err() {
 		let node = ShapeNode::Union(UnionShapeNode {
-			a: Box::new(step_node("a")),
-			b: Box::new(step_node("b")),
+			shapes: vec![step_node("a"), step_node("b")],
 		});
 		let result = shape(&node, HashMap::new());
 		assert!(result.is_err());
-		assert!(result.unwrap_err().contains("Only StepNode"));
+		assert!(result.unwrap_err().contains("not found in collected map"));
 	}
 }

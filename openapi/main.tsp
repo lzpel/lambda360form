@@ -133,8 +133,7 @@ model StepNode extends ShapeNodeBase {
 /** ブーリアン合体 (BRepAlgoAPI_Fuse) */
 model UnionShapeNode extends ShapeNodeBase {
   `op`: "union";
-  a: ShapeNode;
-  b: ShapeNode;
+  shapes: ShapeNode[];
 }
 
 /** ブーリアン共通部分 (BRepAlgoAPI_Common) */

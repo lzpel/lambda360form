@@ -1,7 +1,7 @@
 use crate::openapi::*;
-use crate::shape_stretch::stretch;
 use crate::shape_to_glb::create_glb;
-use chijin::Shape;
+use chijin::{Shape, utils::stretch_vector};
+use glam::DVec3;
 use ngoni;
 
 use sha2::{Digest, Sha256};
@@ -86,8 +86,9 @@ fn collect_keys(node: &ShapeNode, keys: &mut std::collections::HashSet<String>) 
 			keys.insert(step.content_hash.clone());
 		}
 		ShapeNode::Union(n) => {
-			collect_keys(&n.a, keys);
-			collect_keys(&n.b, keys);
+			for s in &n.shapes {
+				collect_keys(s, keys);
+			}
 		}
 		ShapeNode::Intersect(n) => {
 			collect_keys(&n.a, keys);
@@ -120,8 +121,9 @@ fn strip_descriptions(node: &mut ShapeNode) {
 			step.description = None;
 		}
 		ShapeNode::Union(n) => {
-			strip_descriptions(&mut n.a);
-			strip_descriptions(&mut n.b);
+			for s in &mut n.shapes {
+				strip_descriptions(s);
+			}
 		}
 		ShapeNode::Intersect(n) => {
 			strip_descriptions(&mut n.a);
@@ -208,11 +210,48 @@ fn eval_shape(node: &ShapeNode, shapes: &mut HashMap<String, Shape>) -> Result<S
 				.remove(sha256)
 				.ok_or_else(|| format!("Shape data for '{}' not found in collected map", sha256))
 		}
+		ShapeNode::Union(n) => {
+			if n.shapes.is_empty() {
+				return Err("Union requires at least one shape".to_string());
+			}
+			let mut iter = n.shapes.iter();
+			let first = eval_shape(iter.next().unwrap(), shapes)?;
+			iter.try_fold(first, |acc, s| {
+				let next = eval_shape(s, shapes)?;
+				acc.union(&next).map(Shape::from).map_err(|e| e.to_string())
+			})
+		}
 		ShapeNode::Stretch(n) => {
 			let [cx, cy, cz] = resolve_vec3(&n.cut)?;
 			let [dx, dy, dz] = resolve_vec3(&n.delta)?;
 			let child = eval_shape(&n.shape, shapes)?;
-			stretch(&child, cx, cy, cz, dx, dy, dz).map_err(|e| e.to_string())
+			let eps = 1e-10;
+			let origin = DVec3::new(cx, cy, cz);
+			let x;
+			let after_x: &Shape = if dx > eps {
+				x = stretch_vector(&child, origin, DVec3::new(dx, 0.0, 0.0))
+					.map_err(|e| e.to_string())?;
+				&x
+			} else {
+				&child
+			};
+			let y;
+			let after_y: &Shape = if dy > eps {
+				y = stretch_vector(after_x, origin, DVec3::new(0.0, dy, 0.0))
+					.map_err(|e| e.to_string())?;
+				&y
+			} else {
+				after_x
+			};
+			let z;
+			let after_z: &Shape = if dz > eps {
+				z = stretch_vector(after_y, origin, DVec3::new(0.0, 0.0, dz))
+					.map_err(|e| e.to_string())?;
+				&z
+			} else {
+				after_y
+			};
+			after_z.clean().map_err(|e| e.to_string())
 		}
 		_ => Err("Only StepNode and StretchNode are currently supported".to_string()),
 	}

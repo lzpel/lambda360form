@@ -24,7 +24,7 @@ serde_json_canonicalizer = "0.3"
 # frontend 埋め込み用
 rust-embed = { version = "^8", optional=true }
 mime_guess = { version = "^2", optional=true }
-chijin = { version = "^0.3.3", features = ["prebuilt", "color"], default-features = false }
+chijin = { version = "^0.3.4", features = ["prebuilt", "color"], default-features = false } # 0.3.4: Face::revolve, Face::extrude, Face::from_polygon 追加
 
 [dev-dependencies]
 mandolin = "0.4.0-alpha.6"
