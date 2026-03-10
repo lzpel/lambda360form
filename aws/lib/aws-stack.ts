@@ -4,7 +4,7 @@ import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
-import { aws_s3 as s3 } from 'aws-cdk-lib';
+import { aws_s3, aws_ses, aws_iam } from 'aws-cdk-lib';
 
 export class AwsStack extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -52,8 +52,8 @@ export class AwsStack extends cdk.Stack {
 			}
 		);
 
-		// S3バケットや
-		const bucket_temp = new s3.Bucket(this, 'temp', {
+		// aws_s3バケットや
+		const bucket_temp = new aws_s3.Bucket(this, 'temp', {
 			lifecycleRules: [
 				{
 					// デフォルト: 180日で削除
@@ -66,16 +66,23 @@ export class AwsStack extends cdk.Stack {
 				},
 			],
 			cors: [{
-				allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST, s3.HttpMethods.HEAD],
+				allowedMethods: [aws_s3.HttpMethods.GET, aws_s3.HttpMethods.PUT, aws_s3.HttpMethods.POST, aws_s3.HttpMethods.HEAD],
 				allowedOrigins: ['*'],
 				allowedHeaders: ['*'],
 			}],
 		});
-		const bucket_main = new s3.Bucket(this, 'main');
+		const bucket_main = new aws_s3.Bucket(this, 'main');
 
 		// Lambdaにアクセス権限あげるで
 		bucket_temp.grantReadWrite(apiFunction);
 		bucket_main.grantReadWrite(apiFunction);
+		apiFunction.addToRolePolicy(new aws_iam.PolicyStatement({
+			actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+			resources: [
+				`arn:aws:ses:ap-northeast-1:${this.account}:identity/*`,
+				`arn:aws:ses:ap-northeast-1:${this.account}:configuration-set/*`,
+			],
+		}));
 
 		// Lambdaに環境変数渡すで
 		apiFunction.addEnvironment('BUCKET_TEMP', bucket_temp.bucketName);

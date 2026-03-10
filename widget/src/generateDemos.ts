@@ -55,6 +55,9 @@ for (const name of entries) {
   fs.mkdirSync(demoOutDir, { recursive: true });
   fs.writeFileSync(path.join(demoOutDir, "index.html"), html);
   console.log(`Generated: dist/examples/${name}/index.html`);
+  // jsもunpkgに含めてしまうと宣伝ページなどを簡単に構築できる
+  fs.writeFileSync(path.join(demoOutDir, "script.js"), script);
+  console.log(`Generated: dist/examples/${name}/script.js`);
 
   const readmePath = path.join(examplesDir, name, "README.md");
   const description = fs.existsSync(readmePath)
