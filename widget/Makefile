@@ -6,10 +6,10 @@ generate:
 run:
 	npm run dev
 
-deploy:
+deploy: generate
 	npm run build
 
-publish:
+publish: deploy
 	# https://unpkg.com/lambda360form@latest/dist/lambda360form.js
 	npm publish
 
